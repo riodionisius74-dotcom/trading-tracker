@@ -461,7 +461,7 @@
 
     <script>
         // Data State Management
-        const GOOGLE_SCRIPT_URL = https://script.google.com/macros/s/AKfycbxwncqSG5mY4mOWtUuR7j2L6w7toAXPCdgQHvTHR92UT4nmsJrm9COQx3w-tXdKjOo/exec 'ISI_DENGAN_URL_WEB_APP_GOOGLE_SCRIPT_ANDA'; // GANTI INI DENGAN URL APPS SCRIPT-MU!
+        const GOOGLE_SCRIPT_URL = 'ISI_DENGAN_URL_WEB_APP_GOOGLE_SCRIPT_ANDA';
 
         let trades = [];
         try {
@@ -626,15 +626,15 @@
                 showMessage('Menyimpan trade baru ke server...');
             }
 
-            // Simpan cache lokal untuk visual instan (Optimistic UI Update)
+            // Simpan cache lokal
             localStorage.setItem('trading_data', JSON.stringify(trades));
             closeModal();
 
-            // Panggil API Backend Google Sheets
+            // Panggil API Backend Google Sheets jika URL telah dikonfigurasi
             if (GOOGLE_SCRIPT_URL !== 'ISI_DENGAN_URL_WEB_APP_GOOGLE_SCRIPT_ANDA') {
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Menghindari CORS Preflight Error
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'addTrade', data: tradeData })
                 }).then(() => showMessage('Berhasil tersimpan ke Google Sheets!'))
                   .catch(() => showMessage('Gagal menyimpan ke server.'));
@@ -918,7 +918,6 @@
             document.getElementById('stat-sharpe-ratio').innerText = sharpeText;
             document.getElementById('stat-sharpe-ratio').className = `text-2xl font-extrabold ${!isNaN(sharpeRatio) && sharpeRatio >= 1 ? 'text-profitGreen' : (!isNaN(sharpeRatio) && sharpeRatio < 0 ? 'text-brandRed' : 'text-gray-800')}`;
 
-            // Render Dynamic Cashflow Banner Text
             renderCashflowBanner(period, totalPnL);
 
             // Render Asset Breakdown
@@ -998,7 +997,7 @@
             if (pnlChartInstance) pnlChartInstance.destroy();
             if (equityChartInstance) equityChartInstance.destroy();
 
-            // 1. Kalkulasi Saldo/Base sebelum periode yang difilter (Agar Equity akurat)
+            // 1. Kalkulasi Saldo/Base sebelum periode yang difilter
             let basePnL = 0;
             let baseEq = 0;
 
@@ -1022,7 +1021,7 @@
                 });
             }
 
-            // 2. Gabungkan transaksi Trade dan Funding ke dalam satu rentang waktu (Timeline)
+            // 2. Gabungkan transaksi Trade dan Funding ke timeline
             const events = [];
             closedTrades.forEach(t => events.push({ date: new Date(t.date), pnl: t.pnl, eqChange: t.pnl }));
             periodFundings.forEach(f => {
@@ -1067,7 +1066,6 @@
                         }
                     }
 
-                    // Tambahkan hasil transaksi saat ini ke kalkulasi total
                     cumulativePnL += e.pnl;
                     cumulativeEq += e.eqChange;
 
@@ -1177,23 +1175,21 @@
             checkAuth();
             document.getElementById('current-date-display').innerText = formatDateFull(new Date());
             
-            // Tampilkan cache (Local Storage) segera (supaya UI tidak freeze selagi mengambil data)
+            // Render local storage cached data first
             renderTable();
             updateDashboard();
             
-            // Sinkronisasi dengan Google Sheets Backend (Menarik data terpusat saat baru dibuka)
+            // Sync with Google Sheets backend if URL configured
             if (GOOGLE_SCRIPT_URL !== 'ISI_DENGAN_URL_WEB_APP_GOOGLE_SCRIPT_ANDA') {
                 showMessage('Sinkronisasi data dari server Google Sheets...');
                 fetch(GOOGLE_SCRIPT_URL)
                     .then(res => res.json())
                     .then(json => {
-                        if(json.status === 'success') {
+                        if (json.status === 'success') {
                             trades = json.trades || [];
-                            // Urutkan trade terbaru di atas
                             trades.sort((a,b) => new Date(b.date) - new Date(a.date));
                             fundings = json.fundings || [];
                             
-                            // Perbarui cache lokal
                             localStorage.setItem('trading_data', JSON.stringify(trades));
                             localStorage.setItem('funding_data', JSON.stringify(fundings));
                             
