@@ -38,7 +38,7 @@
             <form onsubmit="handleLogin(event)">
                 <div class="mb-4 text-left">
                     <label class="block text-sm font-bold mb-2 text-gray-700">Username</label>
-                    <input type="text" id="usernameInput" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Ketik username Anda...">
+                    <input type="text" id="usernameInput" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Ketik username Anda..." required>
                 </div>
                 <button type="submit" class="w-full bg-blue text-white font-bold py-2 rounded hover:opacity-90">Masuk ke Sistem</button>
             </form>
@@ -136,7 +136,7 @@
             </div>
         </div>
 
-        <!-- TAB: RIWAYAT DANA (BARU) -->
+        <!-- TAB: RIWAYAT DANA -->
         <div id="fundingTab" class="tab-content hidden">
             <div class="bg-white rounded shadow overflow-hidden">
                 <table class="w-full text-left border-collapse">
@@ -157,7 +157,7 @@
     </div>
 
     <!-- Modal Tambah Trade -->
-    <div id="tradeModal" class="hidden fixed top-0 left-0 w-full height-100 h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div id="tradeModal" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-96">
             <h2 class="text-xl font-bold mb-4 border-b pb-2">Tambah Trade Baru</h2>
             <form id="tradeForm" onsubmit="submitTrade(event)">
@@ -265,7 +265,6 @@
         let fundingsData = [];
         let myChart;
 
-        // Cek Login Saat Muat Halaman
         window.onload = () => {
             if (currentUser) {
                 document.getElementById('loginOverlay').classList.add('hidden');
@@ -276,7 +275,6 @@
             }
         };
 
-        // Fungsi Login / Register Dinamis
         function handleLogin(event) {
             event.preventDefault();
             const userInput = document.getElementById('usernameInput').value.trim();
@@ -294,7 +292,6 @@
             location.reload();
         }
 
-        // Navigasi Tab
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
@@ -312,7 +309,6 @@
             if (tab === 'funding') renderFundings();
         }
 
-        // Modal
         function openModal(id) { 
             if (id === 'depositModal') {
                 document.getElementById('fType').value = 'Deposit';
@@ -329,7 +325,6 @@
         }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        // Market Auto-detect
         function autoDetectMarket() {
             const asset = document.getElementById('tAsset').value;
             const marketSelect = document.getElementById('tMarket');
@@ -338,25 +333,22 @@
             else marketSelect.value = 'Forex';
         }
 
-        // Ambil Data dari Sheets
         function fetchDataFromSheets() {
             document.getElementById('cashflowText').innerText = 'Menyinkronkan data dengan server...';
             
-            // Ambil Trades
             fetch(GOOGLE_SCRIPT_URL + `?action=getTrades&username=${currentUser}`)
                 .then(res => res.json())
                 .then(result => {
                     if (result.status === 'success') {
                         tradesData = result.data.map(d => ({...d, tradeDate: new Date(d.tradeDate)}));
                         
-                        // Ambil Fundings
                         fetch(GOOGLE_SCRIPT_URL + `?action=getFundings&username=${currentUser}`)
                             .then(res => res.json())
                             .then(resultFunding => {
                                 if (resultFunding.status === 'success') {
                                     fundingsData = resultFunding.data.map(d => ({...d, date: new Date(d.date)}));
                                 }
-                                switchTab('dashboard'); // Render UI
+                                switchTab('dashboard');
                             });
                     }
                 })
@@ -366,7 +358,6 @@
                 });
         }
 
-        // Simpan Trade ke Sheets
         function submitTrade(event) {
             event.preventDefault();
             const btn = event.submitter;
@@ -397,7 +388,7 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(newTrade)
             }).then(() => {
-                newTrade.tradeDate = new Date(newTrade.tradeDate); // konversi untuk local array
+                newTrade.tradeDate = new Date(newTrade.tradeDate);
                 tradesData.push(newTrade);
                 closeModal('tradeModal');
                 document.getElementById('tradeForm').reset();
@@ -409,7 +400,6 @@
             });
         }
 
-        // Simpan Deposit/Withdraw ke Sheets
         function submitFunding(event) {
             event.preventDefault();
             const btn = event.submitter;
@@ -441,7 +431,6 @@
             });
         }
 
-        // Render Riwayat Dana
         function renderFundings() {
             const tbody = document.getElementById('fundingTableBody');
             tbody.innerHTML = '';
@@ -459,7 +448,6 @@
             });
         }
 
-        // Render Jurnal Trade
         function renderJournal() {
             const tbody = document.getElementById('journalTableBody');
             tbody.innerHTML = '';
@@ -482,7 +470,6 @@
             });
         }
 
-        // Update Dashboard (PnL & Equity Logic)
         function updateDashboard() {
             if (tradesData.length === 0 && fundingsData.length === 0) {
                 document.getElementById('cashflowText').innerText = "Belum ada transaksi.";
@@ -490,13 +477,11 @@
                 return;
             }
 
-            // Hitung Total Equity Murni
             let totalDeposit = fundingsData.filter(f => f.type === 'Deposit').reduce((sum, f) => sum + f.amount, 0);
             let totalWithdraw = fundingsData.filter(f => f.type === 'Withdraw').reduce((sum, f) => sum + f.amount, 0);
             let totalNetPnL = tradesData.reduce((sum, t) => sum + t.netPnL, 0);
             let currentEquity = totalDeposit - totalWithdraw + totalNetPnL;
 
-            // Statistik Dasar
             let wins = tradesData.filter(t => t.netPnL > 0).length;
             let winRate = tradesData.length > 0 ? (wins / tradesData.length) * 100 : 0;
             
@@ -506,10 +491,8 @@
             document.getElementById('statTotalTrades').innerText = tradesData.length;
             document.getElementById('statEquity').innerText = `$${currentEquity.toFixed(2)}`;
 
-            // Teks Cashflow
             document.getElementById('cashflowText').innerText = `Cashflow Anda saat ini ${totalNetPnL >= 0 ? 'Positive' : 'Minus'} $${Math.abs(totalNetPnL).toFixed(2)}`;
 
-            // Render Chart
             renderChart();
         }
 
@@ -517,14 +500,9 @@
             const ctx = document.getElementById('mainChart').getContext('2d');
             if(myChart) myChart.destroy();
 
-            // Kumpulkan semua tanggal dari Trade dan Funding
-            let allDatesMap = new Map();
-            
-            // Set base Equity harian
             let runningEquity = 0;
             let runningPnL = 0;
 
-            // Menggabungkan dan mengurutkan secara kronologis
             let allEvents = [];
             tradesData.forEach(t => allEvents.push({ date: t.tradeDate, type: 'trade', amount: t.netPnL }));
             fundingsData.forEach(f => allEvents.push({ date: f.date, type: f.type, amount: f.amount }));
@@ -537,12 +515,11 @@
 
             if (allEvents.length > 0) {
                 let currentDate = new Date(allEvents[0].date);
-                let endDate = new Date(); // Sampai hari ini
+                let endDate = new Date();
 
                 while(currentDate <= endDate) {
                     let dateStr = `${currentDate.getDate()}/${currentDate.getMonth()+1}`;
                     
-                    // Proses semua event di hari yang sama
                     let eventsToday = allEvents.filter(e => e.date.toDateString() === currentDate.toDateString());
                     eventsToday.forEach(e => {
                         if (e.type === 'Deposit') runningEquity += e.amount;
@@ -557,7 +534,6 @@
                     chartPnL.push(runningPnL);
                     chartEquity.push(runningEquity);
 
-                    // Tambah 1 hari
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
             }
